@@ -12,7 +12,6 @@ I modified datetimepicker (https://github.com/CiTuX/datetimepicker) to change co
 ## Credits
 
 CiTuX (https://github.com/CiTuX/datetimepicker)
-Google - For developing the library
 
 ## License
 
