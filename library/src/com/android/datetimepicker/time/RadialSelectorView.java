@@ -73,6 +73,9 @@ public class RadialSelectorView extends View {
     private double mSelectionRadians;
     private boolean mForceDrawDot;
 
+    private boolean isCustomColor;
+    private int mCustomColor;
+
     public RadialSelectorView(Context context) {
         super(context);
         mIsInitialized = false;
@@ -80,26 +83,27 @@ public class RadialSelectorView extends View {
 
     /**
      * Initialize this selector with the state of the picker.
-     * @param context Current context.
-     * @param is24HourMode Whether the selector is in 24-hour mode, which will tell us
-     * whether the circle's center is moved up slightly to make room for the AM/PM circles.
-     * @param hasInnerCircle Whether we have both an inner and an outer circle of numbers
-     * that may be selected. Should be true for 24-hour mode in the hours circle.
-     * @param disappearsOut Whether the numbers' animation will have them disappearing out
-     * or disappearing in.
+     *
+     * @param context          Current context.
+     * @param is24HourMode     Whether the selector is in 24-hour mode, which will tell us
+     *                         whether the circle's center is moved up slightly to make room for the AM/PM circles.
+     * @param hasInnerCircle   Whether we have both an inner and an outer circle of numbers
+     *                         that may be selected. Should be true for 24-hour mode in the hours circle.
+     * @param disappearsOut    Whether the numbers' animation will have them disappearing out
+     *                         or disappearing in.
      * @param selectionDegrees The initial degrees to be selected.
-     * @param isInnerCircle Whether the initial selection is in the inner or outer circle.
-     * Will be ignored when hasInnerCircle is false.
+     * @param isInnerCircle    Whether the initial selection is in the inner or outer circle.
+     *                         Will be ignored when hasInnerCircle is false.
      */
     public void initialize(Context context, boolean is24HourMode, boolean hasInnerCircle,
-            boolean disappearsOut, int selectionDegrees, boolean isInnerCircle) {
+                           boolean disappearsOut, int selectionDegrees, boolean isInnerCircle) {
         if (mIsInitialized) {
             Log.e(TAG, "This RadialSelectorView may only be initialized once.");
             return;
         }
 
         Resources res = context.getResources();
-
+        isCustomColor = false;
         int blue = res.getColor(R.color.blue);
         mPaint.setColor(blue);
         mPaint.setAntiAlias(true);
@@ -133,8 +137,58 @@ public class RadialSelectorView extends View {
 
         // Calculate values for the transition mid-way states.
         mAnimationRadiusMultiplier = 1;
-        mTransitionMidRadiusMultiplier = 1f + (0.05f * (disappearsOut? -1 : 1));
-        mTransitionEndRadiusMultiplier = 1f + (0.3f * (disappearsOut? 1 : -1));
+        mTransitionMidRadiusMultiplier = 1f + (0.05f * (disappearsOut ? -1 : 1));
+        mTransitionEndRadiusMultiplier = 1f + (0.3f * (disappearsOut ? 1 : -1));
+        mInvalidateUpdateListener = new InvalidateUpdateListener();
+
+        setSelection(selectionDegrees, isInnerCircle, false);
+        mIsInitialized = true;
+    }
+
+    public void initialize(Context context, boolean is24HourMode, boolean hasInnerCircle,
+                           boolean disappearsOut, int selectionDegrees, boolean isInnerCircle, int color) {
+        if (mIsInitialized) {
+            Log.e(TAG, "This RadialSelectorView may only be initialized once.");
+            return;
+        }
+
+        Resources res = context.getResources();
+        isCustomColor = true;
+        mCustomColor = color;
+        mPaint.setColor(mCustomColor);
+        mPaint.setAntiAlias(true);
+        mSelectionAlpha = SELECTED_ALPHA;
+
+        // Calculate values for the circle radius size.
+        mIs24HourMode = is24HourMode;
+        if (is24HourMode) {
+            mCircleRadiusMultiplier = Float.parseFloat(
+                    res.getString(R.string.circle_radius_multiplier_24HourMode));
+        } else {
+            mCircleRadiusMultiplier = Float.parseFloat(
+                    res.getString(R.string.circle_radius_multiplier));
+            mAmPmCircleRadiusMultiplier =
+                    Float.parseFloat(res.getString(R.string.ampm_circle_radius_multiplier));
+        }
+
+        // Calculate values for the radius size(s) of the numbers circle(s).
+        mHasInnerCircle = hasInnerCircle;
+        if (hasInnerCircle) {
+            mInnerNumbersRadiusMultiplier =
+                    Float.parseFloat(res.getString(R.string.numbers_radius_multiplier_inner));
+            mOuterNumbersRadiusMultiplier =
+                    Float.parseFloat(res.getString(R.string.numbers_radius_multiplier_outer));
+        } else {
+            mNumbersRadiusMultiplier =
+                    Float.parseFloat(res.getString(R.string.numbers_radius_multiplier_normal));
+        }
+        mSelectionRadiusMultiplier =
+                Float.parseFloat(res.getString(R.string.selection_radius_multiplier));
+
+        // Calculate values for the transition mid-way states.
+        mAnimationRadiusMultiplier = 1;
+        mTransitionMidRadiusMultiplier = 1f + (0.05f * (disappearsOut ? -1 : 1));
+        mTransitionEndRadiusMultiplier = 1f + (0.3f * (disappearsOut ? 1 : -1));
         mInvalidateUpdateListener = new InvalidateUpdateListener();
 
         setSelection(selectionDegrees, isInnerCircle, false);
@@ -151,17 +205,21 @@ public class RadialSelectorView extends View {
             color = res.getColor(R.color.blue);
             mSelectionAlpha = SELECTED_ALPHA;
         }
+        if (isCustomColor == true) {
+            color = mCustomColor;
+        }
         mPaint.setColor(color);
     }
 
     /**
      * Set the selection.
+     *
      * @param selectionDegrees The degrees to be selected.
-     * @param isInnerCircle Whether the selection should be in the inner circle or outer. Will be
-     * ignored if hasInnerCircle was initialized to false.
-     * @param forceDrawDot Whether to force the dot in the center of the selection circle to be
-     * drawn. If false, the dot will be drawn only when the degrees is not a multiple of 30, i.e.
-     * the selection is not on a visible number.
+     * @param isInnerCircle    Whether the selection should be in the inner circle or outer. Will be
+     *                         ignored if hasInnerCircle was initialized to false.
+     * @param forceDrawDot     Whether to force the dot in the center of the selection circle to be
+     *                         drawn. If false, the dot will be drawn only when the degrees is not a multiple of 30, i.e.
+     *                         the selection is not on a visible number.
      */
     public void setSelection(int selectionDegrees, boolean isInnerCircle, boolean forceDrawDot) {
         mSelectionDegrees = selectionDegrees;
@@ -193,14 +251,14 @@ public class RadialSelectorView extends View {
     }
 
     public int getDegreesFromCoords(float pointX, float pointY, boolean forceLegal,
-            final Boolean[] isInnerCircle) {
+                                    final Boolean[] isInnerCircle) {
         if (!mDrawValuesReady) {
             return -1;
         }
 
         double hypotenuse = Math.sqrt(
-                (pointY - mYCenter)*(pointY - mYCenter) +
-                (pointX - mXCenter)*(pointX - mXCenter));
+                (pointY - mYCenter) * (pointY - mYCenter) +
+                        (pointX - mXCenter) * (pointX - mXCenter));
         // Check if we're outside the range
         if (mHasInnerCircle) {
             if (forceLegal) {

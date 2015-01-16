@@ -1,31 +1,22 @@
 #DateTimePicker
 
-Mirror of https://android.googlesource.com/platform/frameworks/opt/datetimepicker with Gradle support
-
-DatePicker and TimePicker from Google for **Android 4.0+**
-
-If you want to support pre-ICS devices, you can checkout [this](https://github.com/flavienlaurent/datetimepicker).
-
-![DatePicker](https://raw.githubusercontent.com/CiTuX/datetimepicker/master/demo/screens/dateTimePicker.png)
+I modified datetimepicker (https://github.com/CiTuX/datetimepicker) to change color in timepicker
 
 ## Usage
 
-    compile 'com.github.citux:datetimepicker:0.1.2'
-
-## Demo
-
-A Demo App can be found under [demo](demo).
-
-The interesting part is in the [Activity](demo/src/main/java/ch/citux/datetimepicker/MainActivity.java).
-
-You can download the latest demo from [here](https://github.com/CiTuX/datetimepicker/releases/latest) (demo.apk).
-
+>```java
+> TimePickerDialog.newInstance(this, [YOUR_COLOR], 
+> c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show(getFragmentManager(), 
+> "timePicker");
+                
 ## Credits
 
+CiTuX (https://github.com/CiTuX/datetimepicker)
 Google - For developing the library
 
 ## License
 
+    Copyright 2015 Sunghoon Kang (devholic@plusquare.com)
     Copyright 2014 Paul Stöhr
     Copyright 2013 The Android Open Source Project
 

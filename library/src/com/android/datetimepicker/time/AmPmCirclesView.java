@@ -42,6 +42,7 @@ public class AmPmCirclesView extends View {
 
     private final Paint mPaint = new Paint();
     private int mSelectedAlpha;
+    private boolean isCustomColor;
     private int mUnselectedColor;
     private int mAmPmTextColor;
     private int mSelectedColor;
@@ -76,6 +77,39 @@ public class AmPmCirclesView extends View {
         Resources res = context.getResources();
         mUnselectedColor = res.getColor(R.color.white);
         mSelectedColor = res.getColor(R.color.blue);
+        isCustomColor = false;
+        mAmPmTextColor = res.getColor(R.color.ampm_text_color);
+        mSelectedAlpha = SELECTED_ALPHA;
+        String typefaceFamily = res.getString(R.string.sans_serif);
+        Typeface tf = Typeface.create(typefaceFamily, Typeface.NORMAL);
+        mPaint.setTypeface(tf);
+        mPaint.setAntiAlias(true);
+        mPaint.setTextAlign(Align.CENTER);
+
+        mCircleRadiusMultiplier =
+                Float.parseFloat(res.getString(R.string.circle_radius_multiplier));
+        mAmPmCircleRadiusMultiplier =
+                Float.parseFloat(res.getString(R.string.ampm_circle_radius_multiplier));
+        String[] amPmTexts = new DateFormatSymbols().getAmPmStrings();
+        mAmText = amPmTexts[0];
+        mPmText = amPmTexts[1];
+
+        setAmOrPm(amOrPm);
+        mAmOrPmPressed = -1;
+
+        mIsInitialized = true;
+    }
+
+    public void initialize(Context context, int amOrPm, int customColor) {
+        if (mIsInitialized) {
+            Log.e(TAG, "AmPmCirclesView may only be initialized once.");
+            return;
+        }
+
+        Resources res = context.getResources();
+        mUnselectedColor = res.getColor(R.color.white);
+        mSelectedColor = customColor;
+        isCustomColor = true;
         mAmPmTextColor = res.getColor(R.color.ampm_text_color);
         mSelectedAlpha = SELECTED_ALPHA;
         String typefaceFamily = res.getString(R.string.sans_serif);
@@ -102,12 +136,16 @@ public class AmPmCirclesView extends View {
         Resources res = context.getResources();
         if (themeDark) {
             mUnselectedColor = res.getColor(R.color.dark_gray);
-            mSelectedColor = res.getColor(R.color.red);
+            if (isCustomColor == false) {
+                mSelectedColor = res.getColor(R.color.red);
+            }
             mAmPmTextColor = res.getColor(R.color.white);
             mSelectedAlpha = SELECTED_ALPHA_THEME_DARK;
         } else {
             mUnselectedColor = res.getColor(R.color.white);
-            mSelectedColor = res.getColor(R.color.blue);
+            if (isCustomColor == false) {
+                mSelectedColor = res.getColor(R.color.blue);
+            }
             mAmPmTextColor = res.getColor(R.color.ampm_text_color);
             mSelectedAlpha = SELECTED_ALPHA;
         }
@@ -129,16 +167,16 @@ public class AmPmCirclesView extends View {
             return -1;
         }
 
-        int squaredYDistance = (int) ((yCoord - mAmPmYCenter)*(yCoord - mAmPmYCenter));
+        int squaredYDistance = (int) ((yCoord - mAmPmYCenter) * (yCoord - mAmPmYCenter));
 
         int distanceToAmCenter =
-                (int) Math.sqrt((xCoord - mAmXCenter)*(xCoord - mAmXCenter) + squaredYDistance);
+                (int) Math.sqrt((xCoord - mAmXCenter) * (xCoord - mAmXCenter) + squaredYDistance);
         if (distanceToAmCenter <= mAmPmCircleRadius) {
             return AM;
         }
 
         int distanceToPmCenter =
-                (int) Math.sqrt((xCoord - mPmXCenter)*(xCoord - mPmXCenter) + squaredYDistance);
+                (int) Math.sqrt((xCoord - mPmXCenter) * (xCoord - mPmXCenter) + squaredYDistance);
         if (distanceToPmCenter <= mAmPmCircleRadius) {
             return PM;
         }
